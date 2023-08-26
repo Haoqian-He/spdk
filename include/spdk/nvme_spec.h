@@ -2957,6 +2957,17 @@ struct spdk_nvme_ns_data {
 };
 SPDK_STATIC_ASSERT(sizeof(struct spdk_nvme_ns_data) == 4096, "Incorrect size");
 
+struct spdk_nvme_nvm_ctrlr_data {
+	uint8_t			vsl;
+	uint8_t			wzsl;
+	uint8_t			wusl;
+	uint8_t			dmrl;
+	uint32_t		dmrsl;
+	uint64_t		dmsl;
+	uint8_t			rsvd16[4080];
+};
+SPDK_STATIC_ASSERT(sizeof(struct spdk_nvme_nvm_ctrlr_data) == 4096, "Incorrect size");
+
 struct spdk_nvme_zns_ns_data {
 	/** zone operation characteristics */
 	struct {

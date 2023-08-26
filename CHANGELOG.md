@@ -16,6 +16,11 @@ For retrieving physical addresses, spdk_vtophys() should be used instead.
 
 New APIs, `spdk_flog` and `spdk_vflog`, were added to write messages to the specified log file.
 
+### nvmf
+
+Added `max_discard_size_kib` and `max_write_zeroes_size_kib` to `nvmf_create_subsystem` to set the
+maximum discard size and maximum write_zeroes size.
+
 ## v23.05
 
 ### accel

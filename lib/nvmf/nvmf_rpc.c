@@ -347,6 +347,8 @@ struct rpc_subsystem_create {
 	bool ana_reporting;
 	uint16_t min_cntlid;
 	uint16_t max_cntlid;
+	uint64_t max_discard_size_kib;
+	uint64_t max_write_zeroes_size_kib;
 };
 
 static const struct spdk_json_object_decoder rpc_subsystem_create_decoders[] = {
@@ -359,6 +361,8 @@ static const struct spdk_json_object_decoder rpc_subsystem_create_decoders[] = {
 	{"ana_reporting", offsetof(struct rpc_subsystem_create, ana_reporting), spdk_json_decode_bool, true},
 	{"min_cntlid", offsetof(struct rpc_subsystem_create, min_cntlid), spdk_json_decode_uint16, true},
 	{"max_cntlid", offsetof(struct rpc_subsystem_create, max_cntlid), spdk_json_decode_uint16, true},
+	{"max_discard_size_kib", offsetof(struct rpc_subsystem_create, max_discard_size_kib), spdk_json_decode_uint64, true},
+	{"max_write_zeroes_size_kib", offsetof(struct rpc_subsystem_create, max_write_zeroes_size_kib), spdk_json_decode_uint64, true},
 };
 
 static void
@@ -450,6 +454,9 @@ rpc_nvmf_create_subsystem(struct spdk_jsonrpc_request *request,
 						     "Invalid cntlid range [%u-%u]", req->min_cntlid, req->max_cntlid);
 		goto cleanup;
 	}
+
+	subsystem->max_discard_size_kib = req->max_discard_size_kib;
+	subsystem->max_write_zeroes_size_kib = req->max_write_zeroes_size_kib;
 
 	rc = spdk_nvmf_subsystem_start(subsystem,
 				       rpc_nvmf_subsystem_started,

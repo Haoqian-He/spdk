@@ -2904,6 +2904,22 @@ spdk_nvmf_ns_identify_iocs_specific(struct spdk_nvmf_ctrlr *ctrlr,
 }
 
 static int
+nvmf_ctrlr_identify_iocs_nvm(struct spdk_nvmf_ctrlr *ctrlr,
+			     struct spdk_nvme_cmd *cmd,
+			     struct spdk_nvme_cpl *rsp,
+			     struct spdk_nvme_nvm_ctrlr_data *cdata_nvm)
+{
+	cdata_nvm->wzsl = spdk_u64log2(ctrlr->subsys->max_write_zeroes_size_kib >>
+				       (12 + ctrlr->vcprop.cap.bits.mpsmin));
+	cdata_nvm->dmrsl = ctrlr->subsys->max_discard_size_kib >> 9;
+	cdata_nvm->dmrl = 1;
+
+	rsp->status.sct = SPDK_NVME_SCT_GENERIC;
+	rsp->status.sc = SPDK_NVME_SC_SUCCESS;
+	return SPDK_NVMF_REQUEST_EXEC_STATUS_COMPLETE;
+}
+
+static int
 nvmf_ctrlr_identify_iocs_zns(struct spdk_nvmf_ctrlr *ctrlr,
 			     struct spdk_nvme_cmd *cmd,
 			     struct spdk_nvme_cpl *rsp,
@@ -2933,6 +2949,8 @@ spdk_nvmf_ctrlr_identify_iocs_specific(struct spdk_nvmf_ctrlr *ctrlr,
 	memset(cdata, 0, cdata_size);
 
 	switch (csi) {
+	case SPDK_NVME_CSI_NVM:
+		return nvmf_ctrlr_identify_iocs_nvm(ctrlr, cmd, rsp, cdata);
 	case SPDK_NVME_CSI_ZNS:
 		return nvmf_ctrlr_identify_iocs_zns(ctrlr, cmd, rsp, cdata);
 	default:
