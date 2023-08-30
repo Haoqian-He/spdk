@@ -77,6 +77,25 @@ def vhost_scsi_controller_add_target(client, ctrlr, scsi_target_num, bdev_name):
     return client.call('vhost_scsi_controller_add_target', params)
 
 
+def vhost_create_scsi_controller_with_targets(client, ctrlr, targets, cpumask=None):
+    """
+    Args:
+        ctrlr:   controller name
+        targets: list of bdev_name:scsi_target_num pairs, e.g.
+                 [{"bdev_name": "Malloc1", "scsi_target_num": 0}]
+        cpumask: cpu mask for this controller
+    """
+    params = {
+        'ctrlr': ctrlr,
+        'targets': targets,
+    }
+
+    if cpumask:
+        params['cpumask'] = cpumask
+
+    return client.call('vhost_create_scsi_controller_with_targets', params)
+
+
 def vhost_scsi_controller_remove_target(client, ctrlr, scsi_target_num):
     """Remove target from vhost scsi controller.
     Args:

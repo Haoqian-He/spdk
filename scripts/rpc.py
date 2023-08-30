@@ -2720,6 +2720,26 @@ Format: 'user:u1 secret:s1 muser:mu1 msecret:ms1,user:u2 secret:s2 muser:mu2 mse
     p.add_argument('bdev_name', help='bdev name')
     p.set_defaults(func=vhost_scsi_controller_add_target)
 
+    def vhost_create_scsi_controller_with_targets(args):
+        targets = []
+        for u in args.bdev_target_pairs.strip().split(" "):
+            bdev_name, scsi_tgt_num = u.split(":")
+            targets.append({"bdev_name": bdev_name, "scsi_target_num": int(scsi_tgt_num)})
+
+        print_json(rpc.vhost.vhost_create_scsi_controller_with_targets(args.client,
+                                                                       ctrlr=args.ctrlr,
+                                                                       targets=targets,
+                                                                       cpumask=args.cpumask))
+
+    p = subparsers.add_parser('vhost_create_scsi_controller_with_targets',
+                              help='Add new vhost controller with target lun')
+    p.add_argument('ctrlr', help='controller name')
+    p.add_argument('bdev_target_pairs', help="""
+    Whitespace-separated list of <bdev name:scsi target num> pairs enclosed in quotes.
+    Example: 'Malloc0:0 Malloc1:1' """)
+    p.add_argument('--cpumask', help='cpu mask for controller')
+    p.set_defaults(func=vhost_create_scsi_controller_with_targets)
+
     def vhost_scsi_controller_remove_target(args):
         rpc.vhost.vhost_scsi_controller_remove_target(args.client,
                                                       ctrlr=args.ctrlr,

@@ -9062,6 +9062,51 @@ response:
 }
 ~~~
 
+### vhost_create_scsi_controller_with_targets {#rpc_vhost_create_scsi_controller_with_targets}
+
+Create and start vhost SCSI controller with SCSI targets.
+
+#### Parameters
+
+Name                    | Optional | Type        | Description
+----------------------- | -------- | ----------- | -----------
+ctrlr                   | Required | string      | Controller name
+targets                 | Required | array       | Array of bdev name and SCSI target ID pairs.
+cpumask                 | Optional | string      | @ref cpu_mask for this controller
+
+#### Example
+
+Example request:
+
+~~~json
+{
+  "params": {
+    "ctrlr": "VhostScsi0",
+    "targets": [
+      {
+        "bdev_name": "Malloc1",
+        "scsi_target_num": 0
+      }
+    ],
+    "cpumask": "0x1"
+  },
+  "jsonrpc": "2.0",
+  "method": "vhost_create_scsi_controller_with_targets",
+  "id": 1
+}
+~~~
+
+Example response:
+
+~~~json
+response:
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": 0
+}
+~~~
+
 ### vhost_scsi_controller_remove_target {#rpc_vhost_scsi_controller_remove_target}
 
 Remove SCSI target ID `scsi_target_num` from vhost target `scsi_target_num`.

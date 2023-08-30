@@ -1043,9 +1043,9 @@ vhost_scsi_session_add_tgt(struct spdk_vhost_dev *vdev,
 	return 0;
 }
 
-int
-spdk_vhost_scsi_dev_add_tgt(struct spdk_vhost_dev *vdev, int scsi_tgt_num,
-			    const char *bdev_name)
+static int
+vhost_scsi_dev_add_tgt(struct spdk_vhost_dev *vdev, int scsi_tgt_num,
+		       const char *bdev_name)
 {
 	struct spdk_vhost_scsi_dev *svdev;
 	struct spdk_scsi_dev_vhost_state *state;
@@ -1113,9 +1113,80 @@ spdk_vhost_scsi_dev_add_tgt(struct spdk_vhost_dev *vdev, int scsi_tgt_num,
 	SPDK_INFOLOG(vhost, "%s: added SCSI target %u using bdev '%s'\n",
 		     vdev->name, scsi_tgt_num, bdev_name);
 
+	return scsi_tgt_num;
+}
+
+int
+vhost_scsi_create_ctrlr_with_tgt(const char *name, const char *cpumask,
+				 size_t num_target, struct spdk_vhost_scsi_target_pair *targets)
+{
+	struct spdk_vhost_scsi_dev *svdev;
+	struct spdk_scsi_dev *dev;
+	int rc;
+	size_t i, j;
+
+	svdev = calloc(1, sizeof(*svdev));
+	if (svdev == NULL) {
+		SPDK_ERRLOG("cannot alloc memory for spdk_vhost_scsi_dev!\n");
+		return -ENOMEM;
+	}
+
+	svdev->vdev.name = (char *)name;
+	svdev->vdev.backend = &spdk_vhost_scsi_device_backend;
+
+	for (i = 0; i < num_target; i++) {
+		rc = vhost_scsi_dev_add_tgt(&svdev->vdev, targets[i].scsi_target_num,
+					    targets[i].bdev_name);
+		if (rc < 0) {
+			goto failed;
+		}
+		targets[i].scsi_target_num = rc;
+		svdev->scsi_dev_state[targets[i].scsi_target_num].status = VHOST_SCSI_DEV_PRESENT;
+		svdev->ref++;
+	}
+
+	svdev->vdev.virtio_features = SPDK_VHOST_SCSI_FEATURES;
+	svdev->vdev.disabled_features = SPDK_VHOST_SCSI_DISABLED_FEATURES;
+	svdev->vdev.protocol_features = SPDK_VHOST_SCSI_PROTOCOL_FEATURES;
+
+	rc = vhost_dev_register(&svdev->vdev, name, cpumask, NULL,
+				&spdk_vhost_scsi_device_backend,
+				&spdk_vhost_scsi_user_device_backend);
+	if (rc < 0) {
+		goto failed;
+	}
+
+	svdev->registered = true;
+
+	return rc;
+
+failed:
+	for (j = 0; j < i; j++) {
+		dev = svdev->scsi_dev_state[targets[j].scsi_target_num].dev;
+		spdk_scsi_dev_delete_port(dev, 0);
+		spdk_scsi_dev_destruct(dev, NULL, NULL);
+	}
+	free(svdev);
+
+	return rc;
+}
+
+int
+spdk_vhost_scsi_dev_add_tgt(struct spdk_vhost_dev *vdev, int scsi_tgt_num,
+			    const char *bdev_name)
+{
+	int rc;
+
+	rc = vhost_scsi_dev_add_tgt(vdev, scsi_tgt_num, bdev_name);
+	if (rc < 0) {
+		return rc;
+	}
+
+	scsi_tgt_num = rc;
 	vhost_user_dev_foreach_session(vdev, vhost_scsi_session_add_tgt,
 				       vhost_scsi_dev_add_tgt_cpl_cb,
 				       (void *)(uintptr_t)scsi_tgt_num);
+
 	return scsi_tgt_num;
 }
 

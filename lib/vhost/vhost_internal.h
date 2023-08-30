@@ -187,6 +187,14 @@ struct spdk_vhost_dev {
 	TAILQ_ENTRY(spdk_vhost_dev) tailq;
 };
 
+struct spdk_vhost_scsi_target_pair {
+	char *bdev_name;
+	int32_t scsi_target_num;
+};
+
+int vhost_scsi_create_ctrlr_with_tgt(const char *name, const char *cpumask,
+				     size_t num_target, struct spdk_vhost_scsi_target_pair *targets);
+
 static inline struct spdk_vhost_user_dev *
 to_user_dev(struct spdk_vhost_dev *vdev)
 {

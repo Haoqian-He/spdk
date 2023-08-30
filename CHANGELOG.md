@@ -36,6 +36,11 @@ Options for the JSON-RPC server initialization were added. The options are defin
 `spdk_rpc_opts` structure and is passed to the existing API `spdk_rpc_initialize()` as a new
 argument. The options include `log_file` and `log_level`.
 
+### vhost
+
+New `vhost_create_scsi_controller_with_targets` RPC was added to create vhost-scsi controller with
+SCSI targets in one round, it could be used to support live recovery feature of vhost-scsi target.
+
 ## v23.05
 
 ### accel

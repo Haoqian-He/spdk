@@ -131,6 +131,105 @@ invalid:
 SPDK_RPC_REGISTER("vhost_scsi_controller_add_target", rpc_vhost_scsi_controller_add_target,
 		  SPDK_RPC_RUNTIME)
 
+static const struct spdk_json_object_decoder rpc_target_decoders[] = {
+	{"bdev_name", offsetof(struct spdk_vhost_scsi_target_pair, bdev_name), spdk_json_decode_string},
+	{"scsi_target_num", offsetof(struct spdk_vhost_scsi_target_pair, scsi_target_num), spdk_json_decode_int32},
+};
+
+static int
+decode_rpc_target(const struct spdk_json_val *val, void *out)
+{
+	struct spdk_vhost_scsi_target_pair *target = out;
+
+	return spdk_json_decode_object(val, rpc_target_decoders,
+				       SPDK_COUNTOF(rpc_target_decoders), target);
+}
+
+struct rpc_targets {
+	size_t num_target;
+	struct spdk_vhost_scsi_target_pair targets[SPDK_VHOST_SCSI_CTRLR_MAX_DEVS];
+};
+
+static int
+decode_rpc_targets(const struct spdk_json_val *val, void *out)
+{
+	struct rpc_targets *targets = out;
+
+	return spdk_json_decode_array(val, decode_rpc_target, targets->targets,
+				      SPDK_VHOST_SCSI_CTRLR_MAX_DEVS,
+				      &targets->num_target,
+				      sizeof(struct spdk_vhost_scsi_target_pair));
+}
+
+static void
+free_rpc_targets(struct rpc_targets *p)
+{
+	size_t i;
+
+	for (i = 0; i < p->num_target; i++) {
+		free(p->targets[i].bdev_name);
+	}
+}
+
+struct rpc_vhost_scsi_ctrlr_target {
+	char *ctrlr;
+	struct rpc_targets targets;
+	char *cpumask;
+};
+
+static void
+free_rpc_vhost_scsi_ctrlr_target(struct rpc_vhost_scsi_ctrlr_target *req)
+{
+	free(req->ctrlr);
+	free_rpc_targets(&req->targets);
+	free(req->cpumask);
+}
+
+static const struct spdk_json_object_decoder rpc_vhost_scsi_ctrlr_target_decoders[] = {
+	{"ctrlr", offsetof(struct rpc_vhost_scsi_ctrlr_target, ctrlr), spdk_json_decode_string },
+	{"targets", offsetof(struct rpc_vhost_scsi_ctrlr_target, targets), decode_rpc_targets },
+	{"cpumask", offsetof(struct rpc_vhost_scsi_ctrlr_target, cpumask), spdk_json_decode_string, true},
+};
+
+static void
+rpc_vhost_create_scsi_controller_with_targets(struct spdk_jsonrpc_request *request,
+		const struct spdk_json_val *params)
+{
+	struct rpc_vhost_scsi_ctrlr_target req = {0};
+	struct spdk_json_write_ctx *w;
+	int rc = 0;
+
+	if (spdk_json_decode_object(params, rpc_vhost_scsi_ctrlr_target_decoders,
+				    SPDK_COUNTOF(rpc_vhost_scsi_ctrlr_target_decoders),
+				    &req)) {
+		SPDK_ERRLOG("spdk_json_decode_object failed\n");
+		rc = -EINVAL;
+		goto invalid;
+	}
+
+	rc = vhost_scsi_create_ctrlr_with_tgt(req.ctrlr, req.cpumask,
+					      req.targets.num_target, req.targets.targets);
+	if (rc < 0) {
+		SPDK_ERRLOG("vhost_scsi_create_ctrlr_with_tgt failed: %d\n", rc);
+		goto invalid;
+	}
+
+	free_rpc_vhost_scsi_ctrlr_target(&req);
+
+	w = spdk_jsonrpc_begin_result(request);
+	spdk_json_write_int32(w, rc);
+	spdk_jsonrpc_end_result(request, w);
+	return;
+
+invalid:
+	free_rpc_vhost_scsi_ctrlr_target(&req);
+	spdk_jsonrpc_send_error_response(request, SPDK_JSONRPC_ERROR_INVALID_PARAMS,
+					 spdk_strerror(rc));
+}
+SPDK_RPC_REGISTER("vhost_create_scsi_controller_with_targets",
+		  rpc_vhost_create_scsi_controller_with_targets,
+		  SPDK_RPC_RUNTIME)
+
 struct rpc_remove_vhost_scsi_ctrlr_target {
 	char *ctrlr;
 	uint32_t scsi_target_num;
