@@ -736,6 +736,10 @@ vhost_session_mem_register(struct rte_vhost_memory *mem)
 	uint32_t i;
 	uint64_t previous_start = UINT64_MAX;
 
+	if (!spdk_iommu_is_enabled()) {
+		return;
+	}
+
 	for (i = 0; i < mem->nregions; i++) {
 		vhost_session_mem_region_calc(&previous_start, &start, &end, &len, &mem->regions[i]);
 		SPDK_INFOLOG(vhost, "Registering VM memory for vtophys translation - 0x%jx len:0x%jx\n",
@@ -755,6 +759,10 @@ vhost_session_mem_unregister(struct rte_vhost_memory *mem)
 	uint64_t start, end, len;
 	uint32_t i;
 	uint64_t previous_start = UINT64_MAX;
+
+	if (!spdk_iommu_is_enabled()) {
+		return;
+	}
 
 	for (i = 0; i < mem->nregions; i++) {
 		vhost_session_mem_region_calc(&previous_start, &start, &end, &len, &mem->regions[i]);
