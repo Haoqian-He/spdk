@@ -8,6 +8,7 @@
 #include "spdk/env.h"
 #include "spdk/bdev.h"
 #include "spdk/bdev_module.h"
+#include "spdk/log.h"
 #include "spdk/thread.h"
 #include "spdk/likely.h"
 #include "spdk/string.h"
@@ -17,6 +18,8 @@
 
 #include "vhost_internal.h"
 #include <rte_version.h>
+#include <stddef.h>
+#include <stdint.h>
 
 /* Minimal set of features supported by every SPDK VHOST-BLK device */
 #define SPDK_VHOST_BLK_FEATURES_BASE (SPDK_VHOST_FEATURES | \
@@ -421,6 +424,18 @@ static void
 blk_request_complete_cb(struct spdk_bdev_io *bdev_io, bool success, void *cb_arg)
 {
 	struct spdk_vhost_blk_task *task = cb_arg;
+
+	//if (bdev_io->type == SPDK_BDEV_IO_TYPE_READ && success) {
+	//	size_t len = task->iovs[1].iov_len;
+	//	SPDK_ERRLOG("XXXXXX %d %d\n", bdev_io->type, success);
+	//	uint8_t *ptr = task->iovs[1].iov_base;
+	//	for (size_t i = 0; i < len; i++) {
+	//		printf("%02x ", ptr[i]);
+	//		if ((i + 1) % 16 == 0) {
+	//			printf("\n");
+	//		}
+	//	}
+	//}
 
 	spdk_bdev_free_io(bdev_io);
 	blk_request_finish(success ? VIRTIO_BLK_S_OK : VIRTIO_BLK_S_IOERR, task);

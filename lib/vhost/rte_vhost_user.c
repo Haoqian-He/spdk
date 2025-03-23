@@ -4,6 +4,7 @@
  *   Copyright (c) 2021 Mellanox Technologies LTD. All rights reserved.
  */
 
+#include "spdk/log.h"
 #include "spdk/stdinc.h"
 
 #include "spdk/env.h"
@@ -537,6 +538,9 @@ vhost_vq_packed_ring_enqueue(struct spdk_vhost_session *vsession,
 	} else {
 		desc->flags &= ~VRING_DESC_F_AVAIL_USED;
 	}
+	//SPDK_ERRLOG("FINISH addr(%llx) buffer_id(%u) len(%u) flags(%x), last_used_idx(%u), %d\n",
+	//			desc->addr, buffer_id, length, desc->flags,virtqueue->last_used_idx, virtqueue->packed.used_phase);
+
 	rte_vhost_clr_inflight_desc_packed(vsession->vid, virtqueue->vring_idx, inflight_head);
 
 	vhost_log_used_vring_elem(vsession, virtqueue, virtqueue->last_used_idx);
